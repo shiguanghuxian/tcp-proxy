@@ -66,34 +66,51 @@ func (p *Program) handle(name string, sconn net.Conn) {
 	}
 	// 全局保存连接对象，用于关闭
 	p.dconns.Store(dconn, dconn)
-	defer p.dconns.Delete(dconn)
+	defer func() {
+		dconn.Close()
+		p.dconns.Delete(dconn)
+	}()
 
 	// 当遇到错误时关闭
-	ExitChan := make(chan bool, 1)
-	go func(sconn net.Conn, dconn net.Conn, Exit chan bool) {
-		_, err := io.Copy(dconn, sconn)
-		if err != nil {
-			if strings.Contains(err.Error(), "use of closed network connection") {
-				log.Println("连接已经关闭:client")
-			} else {
-				log.Printf("往%v发送数据失败:%v\n", ip, err)
+	exitChan := make(chan bool, 1)
+	// 客户端->服务端
+	go p.tcpIOCopy(sconn, dconn, "客户端->服务端", exitChan)
+	// 服务端->客户端
+	go p.tcpIOCopy(dconn, sconn, "服务端->客户端", exitChan)
+
+	<-exitChan
+
+}
+
+// tcp copy
+func (p *Program) tcpIOCopy(src, dst net.Conn, direction string, exitChan chan bool) {
+	buf := bufferPool.Get().([]byte)
+	defer bufferPool.Put(buf)
+	var err error
+	var n int
+
+	for {
+		n, err = src.Read(buf)
+		if n > 0 {
+			// 写入读取的字节
+			_, err = dst.Write(buf[0:n])
+			if err != nil {
+				log.Println(direction, "写流错误")
+				break
 			}
 		}
-		ExitChan <- true
-	}(sconn, dconn, ExitChan)
-	go func(sconn net.Conn, dconn net.Conn, Exit chan bool) {
-		_, err := io.Copy(sconn, dconn)
-		if err != nil {
-			if strings.Contains(err.Error(), "use of closed network connection") {
-				log.Println("连接已经关闭:server")
-			} else {
-				log.Printf("从%v接收数据失败:%v\n", ip, err)
+
+		if err != nil || n == 0 {
+			// Always "use of closed network connection", but no easy way to
+			// identify this specific error. So just leave the error along for now.
+			// More info here: https://code.google.com/p/go/issues/detail?id=4373
+			if err != io.EOF {
+				log.Println(direction, "读取流错误")
 			}
+			break
 		}
-		ExitChan <- true
-	}(sconn, dconn, ExitChan)
-	<-ExitChan
-	dconn.Close()
+	}
+	exitChan <- true
 }
 
 // 获取一个后端被代理ip

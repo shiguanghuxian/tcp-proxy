@@ -2,6 +2,7 @@ package config
 
 import (
 	"io/ioutil"
+	"log"
 
 	yaml "gopkg.in/yaml.v1"
 )
@@ -19,10 +20,27 @@ type Proxy struct {
 }
 
 // NewConfig 初始化一个server配置文件对象
-func NewConfig(path string) (cfg *Config, err error) {
+func NewConfig(path string) (cfgChan chan *Config, err error) {
 	if path == "" {
 		path = "./config/cfg.yaml"
 	}
+	cfgChan = make(chan *Config, 0)
+	// 读取配置文件
+	cfg, err := readConfFile(path)
+	if err != nil {
+		return
+	}
+	go watcher(cfgChan, path)
+	log.Println(1111)
+	go func() {
+		cfgChan <- cfg
+	}()
+	log.Println(2222)
+	return
+}
+
+// ReadConfFile 读取配置文件
+func readConfFile(path string) (cfg *Config, err error) {
 	cfgBytes := make([]byte, 0)
 	cfgBytes, err = ioutil.ReadFile(path)
 	if err != nil {

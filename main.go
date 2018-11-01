@@ -20,18 +20,38 @@ func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 
 	// 初始化配置文件
-	cfg, err := config.NewConfig(f)
+	cfgChan, err := config.NewConfig(f)
 	if err != nil {
 		log.Fatalln("读取配置文件错误：", err)
 	}
+	cfg := <-cfgChan
 	// 创建程序实例
-	program := program.New(cfg)
+	p := program.New(cfg)
 	// 启动
-	err = program.Start()
+	err = p.Start()
 	if err != nil {
 		log.Fatalln("程序启动错误：", err)
 	}
+
 	log.Println("服务启动成功")
+
+	// 监听配置文件变化
+	go func() {
+		for {
+			select {
+			case cfg := <-cfgChan:
+				err = p.Stop()
+				if err != nil {
+					log.Println("配置变化，关闭服务错误", err)
+				}
+				p = program.New(cfg)
+				err = p.Start()
+				if err != nil {
+					log.Println("配置变化，启动服务错误", err)
+				}
+			}
+		}
+	}()
 
 	// 监听退出
 	c := make(chan os.Signal)
@@ -39,7 +59,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGUSR1, syscall.SIGUSR2)
 	select {
 	case <-c:
-		err = program.Stop()
+		err = p.Stop()
 		if err != nil {
 			log.Fatalln(err)
 		}
