@@ -71,6 +71,14 @@ func (p *Program) handle(name string, sconn net.Conn) {
 		p.dconns.Delete(dconn)
 	}()
 
+	// 获取连接类型，如果是mysql加入ping
+	oneProxy := p.cfg.GetProxyByName(name)
+	if oneProxy != nil {
+		if oneProxy.Typ == "mysql" {
+			p.MysqlPing(dconn)
+		}
+	}
+
 	// 当遇到错误时关闭
 	exitChan := make(chan bool, 1)
 	// 客户端->服务端

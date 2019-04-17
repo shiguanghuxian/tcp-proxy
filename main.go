@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/shiguanghuxian/tcp-proxy/config"
 	"github.com/shiguanghuxian/tcp-proxy/program"
@@ -56,7 +55,7 @@ func main() {
 	// 监听退出
 	c := make(chan os.Signal)
 	//监听指定信号 ctrl+c kill
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGUSR1, syscall.SIGUSR2)
+	signal.Notify(c, os.Interrupt, os.Kill) // syscall.SIGUSR1, syscall.SIGUSR2
 	select {
 	case <-c:
 		err = p.Stop()

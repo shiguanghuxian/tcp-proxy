@@ -15,6 +15,7 @@ type Config struct {
 // Proxy 单个代理信息
 type Proxy struct {
 	Name    string   `yaml:"name"`
+	Typ     string   `yaml:"type"`
 	Listen  string   `yaml:"listen"`
 	Reverse []string `yaml:"reverse"`
 }
@@ -52,4 +53,14 @@ func readConfFile(path string) (cfg *Config, err error) {
 		return
 	}
 	return
+}
+
+// GetProxyByName 根据name获取一个代理配置
+func (c *Config) GetProxyByName(name string) *Proxy {
+	for _, v := range c.Proxys {
+		if v.Name == name {
+			return v
+		}
+	}
+	return nil
 }
