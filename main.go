@@ -58,6 +58,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, os.Kill) // syscall.SIGUSR1, syscall.SIGUSR2
 	select {
 	case <-c:
+		log.Println("程序结束")
 		err = p.Stop()
 		if err != nil {
 			log.Fatalln(err)

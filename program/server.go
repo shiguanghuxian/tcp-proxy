@@ -75,7 +75,7 @@ func (p *Program) handle(name string, sconn net.Conn) {
 	oneProxy := p.cfg.GetProxyByName(name)
 	if oneProxy != nil {
 		if oneProxy.Typ == "mysql" {
-			p.MysqlPing(dconn)
+			p.MysqlPing(dconn, sconn)
 		}
 	}
 
