@@ -2,7 +2,6 @@ package config
 
 import (
 	"io/ioutil"
-	"log"
 
 	yaml "gopkg.in/yaml.v1"
 )
@@ -32,11 +31,11 @@ func NewConfig(path string) (cfgChan chan *Config, err error) {
 		return
 	}
 	go watcher(cfgChan, path)
-	log.Println(1111)
+	// log.Println(1111)
 	go func() {
 		cfgChan <- cfg
 	}()
-	log.Println(2222)
+	// log.Println(2222)
 	return
 }
 

@@ -17,7 +17,7 @@ func (p *Program) MysqlPing(conn net.Conn, sconn net.Conn) {
 			case <-ticker.C:
 				// 构建一个ping包
 				body := []byte{1, 0, 0, 0, 14}
-				log.Println("发送mysql ping")
+				// log.Println("发送mysql ping")
 				_, err := conn.Write(body)
 				if err != nil {
 					log.Println("ping mysql err: ", err)
